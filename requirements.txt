@@ -1,0 +1,4 @@
+streamlit==1.22.0
+pandas
+xlsxwriter
+openpyxl==3.1.5
