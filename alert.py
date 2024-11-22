@@ -44,7 +44,8 @@ if uploaded_file1 and uploaded_file2:
         matches = df2[
             (df2['Vehicle Number'] == row1['VehicleRegistrationNo']) &
             (df2['Alert Time'] >= row1['TransactionDateTime'] - timedelta(hours=time_buffer)) &
-            (df2['Alert Time'] <= row1['TransactionDateTime'] + timedelta(hours=time_buffer))
+            (df2['Alert Time'] <= row1['TransactionDateTime'] + timedelta(hours=time_buffer)) &
+            (df2['Alert'] == 'Refuel')
         ]
         
         if not matches.empty:
