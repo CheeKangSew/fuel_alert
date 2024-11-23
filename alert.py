@@ -50,7 +50,7 @@ if uploaded_file1 and uploaded_file2:
         2. If 'Odometer' is 0, copy from 'DstbSum (km)'.
         3. If the difference between 'DstbSum (km)' and 'Odometer' is > ±20, replace 'Odometer' with 'DstbSum (km)'.
         """
-        if pd.isna(row['Odometer']) or row['Odometer'] == 0:  # Rules 1 & 2
+        if row['Odometer'] == 0:  # Rules 1 & 2
             return dstb_sum
         return row['Odometer']
 
