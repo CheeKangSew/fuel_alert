@@ -42,6 +42,24 @@ if uploaded_file1 and uploaded_file2:
         st.error("The column 'Odometer' is missing in file1.")
         st.stop()
 
+    # Step 4 & 5: Adjust 'Odometer' in df1 based on 'DstbSum (km)' from df2
+    def adjust_odometer(row, dstb_sum):
+        """
+        Adjusts the odometer value based on the following rules:
+        1. If 'Odometer' is empty, copy from 'DstbSum (km)'.
+        2. If 'Odometer' is 0, copy from 'DstbSum (km)'.
+        3. If the difference between 'DstbSum (km)' and 'Odometer' is > ±20, replace 'Odometer' with 'DstbSum (km)'.
+        """
+        if pd.isna(row['Odometer']) or row['Odometer'] == 0:  # Rules 1 & 2
+            return dstb_sum
+        return row['Odometer']
+
+    # Apply the adjustment logic
+    df1['Odometer'] = [
+        adjust_odometer(row, dstb_sum)
+        for row, dstb_sum in zip(df1.to_dict('records'), df2['DstbSum (km)'])
+    ]
+    
     # Display data for confirmation
     st.write("Soliduz NTS Transaction Data (1st File)", df1)
     st.write("NTS Fuel Alert Report Data (2nd File)", df2)
