@@ -31,6 +31,39 @@ if uploaded_file1 and uploaded_file2:
     df2 = pd.read_excel(uploaded_file2, skiprows=4)
     df2['Alert Time'] = pd.to_datetime(df2['Alert Time'])
 
+    # Step 1: Store the value for 'DstbSum (km)' in df2
+    df2['DstbSum (km)'] = df2['DstbSum (km)']
+
+    # Step 2: For 'Alert' = 'Refuel', divide 'DstbSum (km)' by 1000
+    df2.loc[df2['Alert'] == 'Refuel', 'DstbSum (km)'] /= 1000
+
+    # Step 3: Store the value for 'Odometer' in df1
+    if 'Odometer' not in df1.columns:
+        st.error("The column 'Odometer' is missing in file1.")
+        st.stop()
+
+    # Step 4 & 5: Adjust 'Odometer' in df1 based on 'DstbSum (km)' from df2
+    def adjust_odometer(row, dstb_sum):
+        """
+        Adjusts the odometer value based on the following rules:
+        1. If 'Odometer' is empty, copy from 'DstbSum (km)'.
+        2. If the difference between 'DstbSum (km)' and 'Odometer' is > ±20, replace 'Odometer' with 'DstbSum (km)'.
+        """
+        if pd.isna(row['Odometer']):  # Rule 1
+            return dstb_sum
+        if pd.notna(dstb_sum):  # Rule 2
+            delta = abs(dstb_sum - row['Odometer'])
+            if delta > 20:
+                return dstb_sum
+        return row['Odometer']
+
+    # Apply the adjustment logic
+    df1['Odometer'] = [
+        adjust_odometer(row, dstb_sum)
+        for row, dstb_sum in zip(df1.to_dict('records'), df2['DstbSum (km)'])
+    ]
+    
+
     # Display data for confirmation
     st.write("Soliduz NTS Transaction Data (1st File)", df1)
     st.write("NTS Fuel Alert Report Data (2nd File)", df2)
