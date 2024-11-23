@@ -30,35 +30,6 @@ if uploaded_file1 and uploaded_file2:
     # Step 5 & 6: Read and preprocess the 2nd file
     df2 = pd.read_excel(uploaded_file2, skiprows=4)
     df2['Alert Time'] = pd.to_datetime(df2['Alert Time'])
-
-    # Step 1: Store the value for 'DstbSum (km)' in df2
-    df2['DstbSum (km)'] = df2['DstbSum (km)']
-
-    # Step 2: For 'Alert' = 'Refuel', divide 'DstbSum (km)' by 1000
-    df2.loc[df2['Alert'] == 'Refuel', 'DstbSum (km)'] /= 1000
-
-    # Step 3: Store the value for 'Odometer' in df1
-    if 'Odometer' not in df1.columns:
-        st.error("The column 'Odometer' is missing in file1.")
-        st.stop()
-
-    # Step 4 & 5: Adjust 'Odometer' in df1 based on 'DstbSum (km)' from df2
-    def adjust_odometer(row, dstb_sum):
-        """
-        Adjusts the odometer value based on the following rules:
-        1. If 'Odometer' is empty, copy from 'DstbSum (km)'.
-        2. If 'Odometer' is 0, copy from 'DstbSum (km)'.
-        3. If the difference between 'DstbSum (km)' and 'Odometer' is > ±20, replace 'Odometer' with 'DstbSum (km)'.
-        """
-        if row['Odometer'] == 0:  # Rules 1 & 2
-            return dstb_sum
-        return row['Odometer']
-
-    # Apply the adjustment logic
-    df1['Odometer'] = [
-        adjust_odometer(row, dstb_sum)
-        for row, dstb_sum in zip(df1.to_dict('records'), df2['DstbSum (km)'])
-    ]
     
     # Display data for confirmation
     st.write("Soliduz NTS Transaction Data (1st File)", df1)
@@ -82,6 +53,20 @@ if uploaded_file1 and uploaded_file2:
             matched_row = pd.concat([row1, matches.iloc[0][['Vehicle Number','Alert Time', 'Alert', 'Difference (L)','Fuel Remain (L)', 'Fuel Remain (%)', 'RPM', 'DstbSum (km)', 'Location']]])
             matched_row['MatchStatus'] = 'Matched'
             matched_data.append(matched_row)
+
+            # Step 1: Adjust 'Odometer' based on 'DstbSum (km)' after a match is found
+            dstb_sum = matches.iloc[0]['DstbSum (km)']
+            
+            # Step 2: If 'Alert' = 'Refuel', divide 'DstbSum (km)' by 1000
+            if matches.iloc[0]['Alert'] == 'Refuel':
+                dstb_sum /= 1000
+
+            # Adjust 'Odometer'
+            if pd.isna(row1['Odometer']) or row1['Odometer'] == 0:
+                matched_row['Odometer'] = dstb_sum
+            elif pd.notna(dstb_sum) and abs(dstb_sum - row1['Odometer']) > 20:
+                matched_row['Odometer'] = dstb_sum
+
         else:
             # If no match found, keep the row and mark it as unmatched
             unmatched_row = pd.concat([row1, pd.Series([None] * 9, index=['Vehicle Number','Alert Time', 'Alert', 'Difference (L)','Fuel Remain (L)', 'Fuel Remain (%)', 'RPM', 'DstbSum (km)', 'Location'])])
